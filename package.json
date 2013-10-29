@@ -1,0 +1,22 @@
+{
+  "name": "fis-postpackager-ypm",
+  "version": "0.0.2",
+  "description": "a postpackager plugin for fis to process map.json and create map.js for modjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git"
+  },
+  "keywords": [
+    "fis",
+    "postpackager",
+    "package",
+    "modjs"
+  ],
+  "author": "Kaven.D",
+  "license": "MIT",
+  "bugs": {
+  }
+}
