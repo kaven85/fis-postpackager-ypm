@@ -1,6 +1,6 @@
 {
   "name": "fis-postpackager-ypm",
-  "version": "0.0.2",
+  "version": "0.0.4",
   "description": "a postpackager plugin for fis to process map.json and create map.js for modjs",
   "main": "index.js",
   "scripts": {
