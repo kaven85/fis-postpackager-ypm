@@ -21,7 +21,7 @@ module.exports = function(ret, settings, conf, opt){ //打包后处理
                 r.url = res.uri;
             }
         }else{
-            var r = map.cssres[id] = {};
+            var r = map.cssres[res.uri] = {};
             if(res.deps) r.deps = res.deps;
             if(res.pkg) {
                 r.pkg = res.pkg;
@@ -42,21 +42,20 @@ module.exports = function(ret, settings, conf, opt){ //打包后处理
             if(res.deps) r.deps = res.deps;
         }
     });
-	var jsLink=[];
 	//提取html里的js外链
 	var getJSLink=function(content){
-		var reg=/<script.*src=\S(.*?)\S><\/script>/ig,regArray,srcArray=[];
+		var reg=/\<script\s+(type\="text\/javascript")?\s+src\="([^"]*)"\>\s*\<\/script\>/ig,regArray,srcArray=[];
 		var srcReg=/src=\"(.*)\"/i;
-		jsLink=regArray=content.match(reg)||[];
+		regArray=content.match(reg)||[];
 		for (var i = 0, l = regArray.length; i < l; i++) {
 			   srcArray.push(srcReg.exec(regArray[i])[1]);
 		}
 		return srcArray;
 	}
 	var getStyleLink=function(content){
-		var reg=/<link.*href=\S(.*?)\S><\/link>/ig,regArray,srcArray=[];
+		var reg=/\<link\s+(rel\="stylesheet")?\s+href\="([^"]*)"\>\s*\<\/link\>/ig,regArray,srcArray=[];
 		var srcReg=/href=\"(.*)\"/i;
-		jsLink=regArray=content.match(reg)||[];
+		regArray=content.match(reg)||[];
 		for (var i = 0, l = regArray.length; i < l; i++) {
 			   srcArray.push(srcReg.exec(regArray[i])[1]);
 		}
@@ -75,16 +74,21 @@ module.exports = function(ret, settings, conf, opt){ //打包后处理
     fis.util.map(ret.src, function(subpath, file){
         if(file.isHtmlLike && file.noMapJs !== false){ //类html文件
             var content = file.getContent();
-            var jsLinks=getJSLink(content),tmp,replaceScripts=[],replaceAllScripts={},pkgName,scriptHtml='';
+            var jsLinks=getJSLink(content),tmp,tmpM,replaceScripts=[],replaceAllScripts={},pkgName,scriptHtml='';
 			var cssLinks=getStyleLink(content),replaceStyle=[],replaceAllStyle={},styleHtml;
             if(jsLinks.length>0){
                 for (var i = 0, len = jsLinks.length; i < len; i++) {
                     tmp=jsLinks[i];
-                    tmp=tmp.slice(tmp.lastIndexOf('/')+1,tmp.lastIndexOf('.'));
+                    tmpM=tmp;
+                    if(opt.md5){
+                        tmp=tmp.slice(tmp.lastIndexOf('/')+1,tmp.lastIndexOf('_'))
+                    }else{
+                        tmp=tmp.slice(tmp.lastIndexOf('/')+1,tmp.lastIndexOf('.'))
+                    }
                     if(tmp){
                         if(mspObject['res'][tmp]){
                             if(mspObject['res'][tmp]['pkg']){
-                                replaceScripts.push(tmp);
+                                replaceScripts.push(tmpM);
                                 pkgName= mspObject['res'][tmp]['pkg'];
                                 replaceAllScripts[pkgName]=mspObject['pkg'][pkgName]['url'];
                             }
@@ -100,19 +104,18 @@ module.exports = function(ret, settings, conf, opt){ //打包后处理
                             if(mspObject['cssres'][tmp]['pkg']){
                                 replaceStyle.push(tmp);
                                 pkgName= mspObject['cssres'][tmp]['pkg'];
-                                replaceAllStyle[pkgName]=mspObject['csspkg'][pkgName]['url'];
+                                replaceAllStyle[mspObject['csspkg'][pkgName]['url']]=mspObject['csspkg'][pkgName]['url'];
                             }
                         }
                     }
                 }
             }
-
             /**
              * 处理css,去除分散的css引用
              * @param {string}
              **/
             for ( i = 0, len = replaceStyle.length; i < len; i++) {
-                var regex=new RegExp('<link.*?rel="stylesheet".*?'+replaceStyle[i]+'.*?<\/link>');
+                var regex=new RegExp('<link\\s+(rel="stylesheet")?\\s+href="'+replaceStyle[i]+'">\\s*<\/link>');
                 content = content.replace(regex, '');
             }
             /**
@@ -121,9 +124,8 @@ module.exports = function(ret, settings, conf, opt){ //打包后处理
              **/
             for (var o in replaceAllStyle) {
                 styleHtml='<link rel="stylesheet" href="'+replaceAllStyle[o]+'"></link>'
-                content = content.replace(/<\/head>/, '$&\n'+styleHtml);
+                content = content.replace(/<\/head>/, '\n'+styleHtml+'\n$&');
             }
-
 
             //=================================
             /**
@@ -131,7 +133,7 @@ module.exports = function(ret, settings, conf, opt){ //打包后处理
              * @param {string}
              **/
             for ( i = 0, len = replaceScripts.length; i < len; i++) {
-                var regex=new RegExp('<script.*?'+replaceScripts[i]+'.*?<\/script>');
+                var regex=new RegExp('<script\\s+(type="text\/javascript")?\\s+src="'+replaceScripts[i].replace('/','\/')+'">\\s*<\/script>');
                 content = content.replace(regex, '');
             }
             /**
