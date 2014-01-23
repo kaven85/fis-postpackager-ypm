@@ -42,6 +42,16 @@ module.exports = function(ret, settings, conf, opt){ //打包后处理
             if(res.deps) r.deps = res.deps;
         }
     });
+    //获得map的长度
+    var getLengthByMap=function(map){
+        var len=0;
+        for (var obj in map) {
+            if(map.hasOwnProperty(obj)){
+                len+=1;
+            }
+        }
+        return len;
+    }
 	//提取html里的js外链
 	var getJSLink=function(content){
 		var reg=/\<script\s+(type\="text\/javascript")?\s+src\="([^"]*)"\>\s*\<\/script\>/ig,regArray,srcArray=[];
@@ -62,6 +72,10 @@ module.exports = function(ret, settings, conf, opt){ //打包后处理
 		return srcArray;
 	}
     var mspObject=map;
+	//没有资源配置则不做下列处理
+    if(getLengthByMap(map['res'])<=0){
+        return;
+    }
     //只对js进行配置
     var code = 'require.resourceMap(' + JSON.stringify({res:map['res'],pkg:map['pkg']}, null, opt.optimize ? null : 4) + ');';
     //构造map.js配置文件
